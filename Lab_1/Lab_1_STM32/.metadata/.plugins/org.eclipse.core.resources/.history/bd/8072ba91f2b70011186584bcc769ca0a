@@ -1,0 +1,231 @@
+/* USER CODE BEGIN Header */
+/**
+  ******************************************************************************
+  * @file           : main.c
+  * @brief          : 4-Way Traffic Light with 7-Segment Countdown
+  ******************************************************************************
+  */
+/* USER CODE END Header */
+/* Includes ------------------------------------------------------------------*/
+#include "main.h"
+
+/* Private typedef -----------------------------------------------------------*/
+/* USER CODE BEGIN PTD */
+
+/* USER CODE END PTD */
+
+/* Private define ------------------------------------------------------------*/
+/* USER CODE BEGIN PD */
+
+/* USER CODE END PD */
+
+/* Private macro -------------------------------------------------------------*/
+/* USER CODE BEGIN PM */
+
+/* USER CODE END PM */
+
+/* Private variables ---------------------------------------------------------*/
+
+/* USER CODE BEGIN PV */
+
+/* USER CODE END PV */
+
+/* Private function prototypes -----------------------------------------------*/
+void SystemClock_Config(void);
+static void MX_GPIO_Init(void);
+/* USER CODE BEGIN PFP */
+void display7SEG_V(int num);
+void display7SEG_H(int num);
+/* USER CODE END PFP */
+
+/* Private user code ---------------------------------------------------------*/
+/* USER CODE BEGIN 0 */
+
+/* USER CODE END 0 */
+
+/**
+  * @brief  The application entry point.
+  * @retval int
+  */
+int main(void)
+{
+  /* MCU Configuration--------------------------------------------------------*/
+  HAL_Init();
+  SystemClock_Config();
+  MX_GPIO_Init();
+
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
+  while (1)
+  {
+      // PHASE 1: Vertical Green (3s), Horizontal Red (5s)
+      HAL_GPIO_WritePin(RED_LED_V_GPIO_Port,    RED_LED_V_Pin,    1);
+      HAL_GPIO_WritePin(YELLOW_LED_V_GPIO_Port, YELLOW_LED_V_Pin, 1);
+      HAL_GPIO_WritePin(GREEN_LEFD_V_GPIO_Port, GREEN_LEFD_V_Pin, 0);
+
+      HAL_GPIO_WritePin(RED_LED_H_GPIO_Port,    RED_LED_H_Pin,    0);
+      HAL_GPIO_WritePin(YELLOW_LED_H_GPIO_Port, YELLOW_LED_H_Pin, 1);
+      HAL_GPIO_WritePin(GREEN_LED_H_GPIO_Port,  GREEN_LED_H_Pin,  1);
+
+      for (int i = 2; i >= 0; i--) {
+          display7SEG_V(i);     // V: 2 -> 0
+          display7SEG_H(i + 2); // H: 4 -> 2
+          HAL_Delay(1000);
+      }
+
+      // PHASE 2: Vertical Yellow (2s), Horizontal Red (2s)
+      HAL_GPIO_WritePin(GREEN_LEFD_V_GPIO_Port, GREEN_LEFD_V_Pin, 1);
+      HAL_GPIO_WritePin(YELLOW_LED_V_GPIO_Port, YELLOW_LED_V_Pin, 0);
+
+      for (int i = 1; i >= 0; i--) {
+          display7SEG_V(i); // V: 1 -> 0
+          display7SEG_H(i); // H: 1 -> 0
+          HAL_Delay(1000);
+      }
+
+      // PHASE 3: Vertical Red (5s), Horizontal GREEN (3s)
+      HAL_GPIO_WritePin(YELLOW_LED_V_GPIO_Port, YELLOW_LED_V_Pin, 1);
+      HAL_GPIO_WritePin(RED_LED_V_GPIO_Port,    RED_LED_V_Pin,    0);
+
+      HAL_GPIO_WritePin(RED_LED_H_GPIO_Port,    RED_LED_H_Pin,    1);
+      HAL_GPIO_WritePin(GREEN_LED_H_GPIO_Port,  GREEN_LED_H_Pin,  0);
+
+      for (int i = 2; i >= 0; i--) {
+          display7SEG_V(i + 2); // V: 4 -> 2
+          display7SEG_H(i);     // H: 2 -> 0
+          HAL_Delay(1000);
+      }
+
+      // PHASE 4: Vertical Red (2s), Horizontal Yellow (2s)
+      HAL_GPIO_WritePin(GREEN_LED_H_GPIO_Port,  GREEN_LED_H_Pin,  1);
+      HAL_GPIO_WritePin(YELLOW_LED_H_GPIO_Port, YELLOW_LED_H_Pin, 0);
+
+      for (int i = 1; i >= 0; i--) {
+          display7SEG_V(i); // V: 1 -> 0
+          display7SEG_H(i); // H: 1 -> 0
+          HAL_Delay(1000);
+      }
+  }
+  /* USER CODE END 3 */
+}
+
+/**
+  * @brief System Clock Configuration
+  */
+void SystemClock_Config(void)
+{
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
+/**
+  * @brief GPIO Initialization Function
+  */
+static void MX_GPIO_Init(void)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+
+  /* Reset Output Levels */
+  HAL_GPIO_WritePin(GPIOA, RED_LED_V_Pin|YELLOW_LED_V_Pin|GREEN_LEFD_V_Pin|RED_LED_H_Pin
+                          |YELLOW_LED_H_Pin|GREEN_LED_H_Pin, GPIO_PIN_RESET);
+
+  HAL_GPIO_WritePin(GPIOB, a_V_Pin|b_V_Pin|c_V_Pin|d_V_Pin|e_V_Pin|f_V_Pin|g_V_Pin
+                          |a_H_Pin|b_H_Pin|c_H_Pin|d_H_Pin|e_H_Pin|f_H_Pin|g_H_Pin, GPIO_PIN_RESET);
+
+  /* Configure GPIO pins : GPIOA (Traffic LEDs) */
+  GPIO_InitStruct.Pin = RED_LED_V_Pin|YELLOW_LED_V_Pin|GREEN_LEFD_V_Pin|RED_LED_H_Pin
+                          |YELLOW_LED_H_Pin|GREEN_LED_H_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /* Configure GPIO pins : GPIOB (7-Segment V and H) */
+  GPIO_InitStruct.Pin = a_V_Pin|b_V_Pin|c_V_Pin|d_V_Pin|e_V_Pin|f_V_Pin|g_V_Pin
+                          |a_H_Pin|b_H_Pin|c_H_Pin|d_H_Pin|e_H_Pin|f_H_Pin|g_H_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+}
+
+/* USER CODE BEGIN 4 */
+void display7SEG_V(int num) {
+    if (num < 0 || num > 9) return;
+    uint8_t seg[10][7] = {
+        {0,0,0,0,0,0,1}, // 0
+        {1,0,0,1,1,1,1}, // 1
+        {0,0,1,0,0,1,0}, // 2
+        {0,0,0,0,1,1,0}, // 3
+        {1,0,0,1,1,0,0}, // 4
+        {0,1,0,0,1,0,0}, // 5
+        {0,1,0,0,0,0,0}, // 6
+        {0,0,0,1,1,1,1}, // 7
+        {0,0,0,0,0,0,0}, // 8
+        {0,0,0,0,1,0,0}  // 9
+    };
+
+    HAL_GPIO_WritePin(a_V_GPIO_Port, a_V_Pin, seg[num][0]);
+    HAL_GPIO_WritePin(b_V_GPIO_Port, b_V_Pin, seg[num][1]);
+    HAL_GPIO_WritePin(c_V_GPIO_Port, c_V_Pin, seg[num][2]);
+    HAL_GPIO_WritePin(d_V_GPIO_Port, d_V_Pin, seg[num][3]);
+    HAL_GPIO_WritePin(e_V_GPIO_Port, e_V_Pin, seg[num][4]);
+    HAL_GPIO_WritePin(f_V_GPIO_Port, f_V_Pin, seg[num][5]);
+    HAL_GPIO_WritePin(g_V_GPIO_Port, g_V_Pin, seg[num][6]);
+}
+
+void display7SEG_H(int num) {
+    if (num < 0 || num > 9) return;
+    uint8_t seg[10][7] = {
+        {0,0,0,0,0,0,1}, // 0
+        {1,0,0,1,1,1,1}, // 1
+        {0,0,1,0,0,1,0}, // 2
+        {0,0,0,0,1,1,0}, // 3
+        {1,0,0,1,1,0,0}, // 4
+        {0,1,0,0,1,0,0}, // 5
+        {0,1,0,0,0,0,0}, // 6
+        {0,0,0,1,1,1,1}, // 7
+        {0,0,0,0,0,0,0}, // 8
+        {0,0,0,0,1,0,0}  // 9
+    };
+
+    HAL_GPIO_WritePin(a_H_GPIO_Port, a_H_Pin, seg[num][0]);
+    HAL_GPIO_WritePin(b_H_GPIO_Port, b_H_Pin, seg[num][1]);
+    HAL_GPIO_WritePin(c_H_GPIO_Port, c_H_Pin, seg[num][2]);
+    HAL_GPIO_WritePin(d_H_GPIO_Port, d_H_Pin, seg[num][3]);
+    HAL_GPIO_WritePin(e_H_GPIO_Port, e_H_Pin, seg[num][4]);
+    HAL_GPIO_WritePin(f_H_GPIO_Port, f_H_Pin, seg[num][5]);
+    HAL_GPIO_WritePin(g_H_GPIO_Port, g_H_Pin, seg[num][6]);
+}
+/* USER CODE END 4 */
+
+void Error_Handler(void)
+{
+  __disable_irq();
+  while (1) {}
+}

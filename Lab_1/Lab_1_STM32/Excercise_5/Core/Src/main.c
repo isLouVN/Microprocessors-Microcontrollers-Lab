@@ -1,0 +1,189 @@
+/* USER CODE BEGIN Header */
+/**
+  ******************************************************************************
+  * @file           : main.c
+  * @brief          : 4-Way Traffic Light with 7-Segment Countdown
+  ******************************************************************************
+  */
+/* USER CODE END Header */
+
+/* Includes ------------------------------------------------------------------*/
+#include "main.h"
+
+/* Private function prototypes -----------------------------------------------*/
+void SystemClock_Config(void);
+static void MX_GPIO_Init(void);
+void display7SEG(uint8_t num);
+void countdownSEG(uint8_t num);
+
+/**
+  * @brief  The application entry point.
+  * @retval int
+  */
+int main(void)
+{
+  /* MCU Configuration--------------------------------------------------------*/
+  HAL_Init();
+  SystemClock_Config();
+  MX_GPIO_Init();
+
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
+  while (1)
+    {
+        // ------------------------------------------------------------------
+        // PHASE 1: Vertical GREEN (2 -> 0, 3s) | Horizontal RED
+        // ------------------------------------------------------------------
+        HAL_GPIO_WritePin(GREEN_LED_V_GPIO_Port, GREEN_LED_V_Pin, GPIO_PIN_RESET); // V GREEN ON
+        HAL_GPIO_WritePin(YELLOW_LED_V_GPIO_Port, YELLOW_LED_V_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(RED_LED_V_GPIO_Port, RED_LED_V_Pin, GPIO_PIN_SET);
+
+        HAL_GPIO_WritePin(RED_LED_H_GPIO_Port, RED_LED_H_Pin, GPIO_PIN_RESET);     // H RED ON
+        HAL_GPIO_WritePin(YELLOW_LED_H_GPIO_Port, YELLOW_LED_H_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(GREEN_LED_H_GPIO_Port, GREEN_LED_H_Pin, GPIO_PIN_SET);
+
+        countdownSEG(2); // Counts 2, 1, 0 (3 seconds)
+
+        // ------------------------------------------------------------------
+        // PHASE 2: Vertical YELLOW (1 -> 0, 2s) | Horizontal RED
+        // ------------------------------------------------------------------
+        HAL_GPIO_WritePin(GREEN_LED_V_GPIO_Port, GREEN_LED_V_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(YELLOW_LED_V_GPIO_Port, YELLOW_LED_V_Pin, GPIO_PIN_RESET); // V YELLOW ON
+
+        countdownSEG(1); // Counts 1, 0 (2 seconds)
+
+        // ------------------------------------------------------------------
+        // PHASE 3: Vertical RED (4 -> 0, 5s) | Horizontal GREEN (3s) -> YELLOW (2s)
+        // ------------------------------------------------------------------
+        HAL_GPIO_WritePin(YELLOW_LED_V_GPIO_Port, YELLOW_LED_V_Pin, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(RED_LED_V_GPIO_Port, RED_LED_V_Pin, GPIO_PIN_RESET);     // V RED ON
+
+        HAL_GPIO_WritePin(RED_LED_H_GPIO_Port, RED_LED_H_Pin, GPIO_PIN_SET);       // H RED OFF
+
+        for (int i = 4; i >= 0; i--)
+        {
+            if (i >= 2) // Counts 4, 3, 2 (3s): Horizontal GREEN
+            {
+                HAL_GPIO_WritePin(GREEN_LED_H_GPIO_Port, GREEN_LED_H_Pin, GPIO_PIN_RESET); // H GREEN ON
+                HAL_GPIO_WritePin(YELLOW_LED_H_GPIO_Port, YELLOW_LED_H_Pin, GPIO_PIN_SET);
+            }
+            else // Counts 1, 0 (2s): Horizontal YELLOW
+            {
+                HAL_GPIO_WritePin(GREEN_LED_H_GPIO_Port, GREEN_LED_H_Pin, GPIO_PIN_SET);
+                HAL_GPIO_WritePin(YELLOW_LED_H_GPIO_Port, YELLOW_LED_H_Pin, GPIO_PIN_RESET); // H YELLOW ON
+            }
+
+            display7SEG(i);
+            HAL_Delay(1000);
+        }
+    }
+  /* USER CODE END 3 */
+}
+
+/* USER CODE BEGIN 4 */
+void display7SEG(uint8_t num) {
+    if (num > 9) return;
+
+    // Common Anode Truth Table (0 = ON, 1 = OFF)[cite: 5]
+    uint8_t seg[10][7] = {
+        {0,0,0,0,0,0,1}, // 0
+        {1,0,0,1,1,1,1}, // 1
+        {0,0,1,0,0,1,0}, // 2
+        {0,0,0,0,1,1,0}, // 3
+        {1,0,0,1,1,0,0}, // 4
+        {0,1,0,0,1,0,0}, // 5
+        {0,1,0,0,0,0,0}, // 6
+        {0,0,0,1,1,1,1}, // 7
+        {0,0,0,0,0,0,0}, // 8
+        {0,0,0,0,1,0,0}  // 9
+    };
+
+    HAL_GPIO_WritePin(a_GPIO_Port, a_Pin, seg[num][0] ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(b_GPIO_Port, b_Pin, seg[num][1] ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(c_GPIO_Port, c_Pin, seg[num][2] ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(d_GPIO_Port, d_Pin, seg[num][3] ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(e_GPIO_Port, e_Pin, seg[num][4] ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(f_GPIO_Port, f_Pin, seg[num][5] ? GPIO_PIN_SET : GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(g_GPIO_Port, g_Pin, seg[num][6] ? GPIO_PIN_SET : GPIO_PIN_RESET);
+}
+
+void countdownSEG(uint8_t num) {
+    for (int i = num; i >= 0; i--) {
+        display7SEG(i);
+        HAL_Delay(1000);
+    }
+}
+/* USER CODE END 4 */
+
+/**
+  * @brief System Clock Configuration
+  */
+void SystemClock_Config(void)
+{
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
+/**
+  * @brief GPIO Initialization Function
+  */
+static void MX_GPIO_Init(void)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+
+  /* Configure GPIO pin Output Level (Set HIGH = OFF initially)[cite: 5] */
+  HAL_GPIO_WritePin(GPIOA, RED_LED_V_Pin|YELLOW_LED_V_Pin|GREEN_LED_V_Pin|RED_LED_H_Pin
+                          |YELLOW_LED_H_Pin|GREEN_LED_H_Pin, GPIO_PIN_SET);
+
+  HAL_GPIO_WritePin(GPIOB, a_Pin|b_Pin|c_Pin|d_Pin
+                          |e_Pin|f_Pin|g_Pin, GPIO_PIN_SET);
+
+  /* Configure GPIO pins : PA1 - PA6[cite: 4] */
+  GPIO_InitStruct.Pin = RED_LED_V_Pin|YELLOW_LED_V_Pin|GREEN_LED_V_Pin|RED_LED_H_Pin
+                        |YELLOW_LED_H_Pin|GREEN_LED_H_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /* Configure GPIO pins : PB0 - PB6[cite: 4] */
+  GPIO_InitStruct.Pin = a_Pin|b_Pin|c_Pin|d_Pin
+                        |e_Pin|f_Pin|g_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+}
+
+void Error_Handler(void)
+{
+  __disable_irq();
+  while (1)
+  {
+  }
+}
