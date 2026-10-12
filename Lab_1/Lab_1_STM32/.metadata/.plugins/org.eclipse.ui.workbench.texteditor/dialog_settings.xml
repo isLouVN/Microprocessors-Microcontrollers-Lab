@@ -6,8 +6,12 @@
 		<item key="wholeword" value="false"/>
 		<item key="incremental" value="false"/>
 		<item key="isRegEx" value="false"/>
-		<item key="selection" value="0"/>
+		<item key="selection" value="matrix_buffer"/>
 		<list key="findhistory">
+			<item value="matrix_buffer"/>
+			<item value="DOT"/>
+			<item value="timer0"/>
+			<item value="//initial"/>
 			<item value="LED_ON"/>
 			<item value="LED_OFF"/>
 		</list>
